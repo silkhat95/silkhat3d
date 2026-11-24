@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SilkHat_3D-WalkingSimulator</title>
+  <style>
+    /* --- テーマカラー定義（CSS変数） --- */
+    :root {
+      /* デフォルト（ダークテーマ） */
+      --bg-body: #121418;
+      --text-main: #e0e6ed;
+      --text-muted: #a0aab5;
+      --text-footer: #7a8591;
+      --link-color: #64b5f6;
+      --accent-color: #3b82f6;
+      --accent-hover: #2563eb;
+      --bg-card: #1c2026;
+      --bg-th: #252a32;
+      --border-color: #2a2f3a;
+      --hero-overlay-top: rgba(18, 20, 24, 0.45);
+      --hero-overlay-bottom: rgba(18, 20, 24, 0.75);
+      --hero-text: #ffffff;
+      --hero-subtext: #cbd5e1;
+      --hero-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    /* ライトテーマ時の上書き定義 */
+    [data-theme="light"] {
+      --bg-body: #f4f6f9;
+      --text-main: #1e293b;
+      --text-muted: #475569;
+      --text-footer: #64748b;
+      --link-color: #2563eb;
+      --accent-color: #2563eb;
+      --accent-hover: #1d4ed8;
+      --bg-card: #ffffff;
+      --bg-th: #e2e8f0;
+      --border-color: #cbd5e1;
+      --hero-overlay-top: rgba(15, 23, 42, 0.35);
+      --hero-overlay-bottom: rgba(15, 23, 42, 0.65);
+      --hero-text: #ffffff;
+      --hero-subtext: #f1f5f9;
+      --hero-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+    }
+
+    /* 全体の基本設定 */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      line-height: 1.6;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    a {
+      color: var(--link-color);
+      text-decoration: none;
+    }
+
+    /* テーマ切り替えコントロール（右上固定） */
+    .theme-switcher {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 6px 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .theme-switcher label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .theme-switcher select {
+      background-color: transparent;
+      color: var(--text-main);
+      border: none;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .theme-switcher select option {
+      background-color: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    /* ヒーローセクション（ファーストビュー） */
+    header {
+      text-align: center;
+      padding: 120px 20px;
+      background: linear-gradient(var(--hero-overlay-top), var(--hero-overlay-bottom)), url('img-sunset2.jpg') center/cover no-repeat;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      letter-spacing: 0.05em;
+      color: var(--hero-text);
+      text-shadow: var(--hero-shadow);
+    }
+
+    header p {
+      font-size: 1.1rem;
+      color: var(--hero-subtext);
+      margin-bottom: 30px;
+      text-shadow: var(--hero-shadow);
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      background-color: var(--accent-color);
+      color: #fff;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: var(--accent-hover);
+    }
+
+    /* メインコンテンツの共通幅 */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    section {
+      margin-bottom: 60px;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      border-left: 4px solid var(--accent-color);
+      padding-left: 12px;
+      margin-bottom: 20px;
+    }
+
+    /* カード・グリッドレイアウト */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background-color: var(--bg-card);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card-caption {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    /* 操作方法テーブル */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: var(--bg-card);
+      transition: background-color 0.3s ease;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--bg-th);
+    }
+
+    /* フッター */
+    footer {
+      text-align: center;
+      padding: 30px 20px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-footer);
+      font-size: 0.9rem;
+    }
+
+    /* --- スクロールフェードインアニメーション用スタイル --- */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(25px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .fade-in.appear {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- テーマ切り替えドロップダウン -->
+  <div class="theme-switcher">
+    <label for="theme-select">テーマ:</label>
+    <select id="theme-select" aria-label="カラーテーマを選択">
+      <option value="system">自動 (ブラウザ設定)</option>
+      <option value="dark">ダーク</option>
+      <option value="light">ライト</option>
+    </select>
+  </div>
+
+  <!-- ヒーローセクション -->
+  <header class="fade-in">
+    <h1>SilkHat_3D-WalkingSimulator</h1>
+    <p>美しい自然と鉄道の風景を、ただ歩く3Dウォーキングシミュレーター</p>
+    <a href="https://github.com/silkhat95/3D-Walking-Simulator" class="btn" target="_blank">GitHubで詳細を見る</a>
+  </header>
+
+  <main>
+    <!-- ゲームの特徴 -->
+    <section id="features" class="fade-in">
+      <h2>特徴 (Features)</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>リアルな光と空気感</h3>
+          <p>DirectX 12やレイトレーシングを活用し、時間とともに移り変わる空や光の表現を追求しています。</p>
+        </div>
+        <div class="card">
+          <h3>のんびりとした探索</h3>
+          <p>敵や制限時間はありません。自分のペースで広大な自然や駅の風景を歩いて楽しめます。</p>
+        </div>
+        <div class="card">
+          <h3>鉄道のある風景</h3>
+          <p>自然の中を走る鉄道や、細部まで作り込まれた情景をじっくりと眺めることができます。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- スクリーンショット -->
+    <section id="gallery" class="fade-in">
+      <h2>ギャラリー (Screenshots)</h2>
+      <div class="grid">
+        <div class="card" style="padding: 10px; text-align: center;">
+          <img src="img-afternoon.jpg" alt="昼の風景" style="width: 100%; border-radius: 4px; margin-bottom: 8px;">
+          <p class="card-caption">昼の風景</p>
+        </div>
+        <div class="card" style="padding: 10px; text-align: center;">
+          <img src="img-morning.jpg" alt="朝の風景" style="width: 100%; border-radius: 4px; margin-bottom: 8px;">
+          <p class="card-caption">朝の風景</p>
+        </div>
+        <div class="card" style="padding: 10px; text-align: center;">
+          <img src="img-sunset1.jpg" alt="夕方の風景" style="width: 100%; border-radius: 4px; margin-bottom: 8px;">
+          <p class="card-caption">夕方の風景</p>
+        </div>
+        <div class="card" style="padding: 10px; text-align: center;">
+          <img src="img-night1.jpg" alt="夜の風景" style="width: 100%; border-radius: 4px; margin-bottom: 8px;">
+          <p class="card-caption">夜の風景</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 動作環境・導入方法 -->
+    <section id="getting-started" class="fade-in">
+      <h2>動作環境 & 遊び方</h2>
+      <div class="card">
+        <p><strong>対応OS:</strong> Windows 10 / 11 (64bit専用)</p>
+        <p><strong>必須環境:</strong> DirectX 12 対応GPU</p>
+        <p><strong>ダウンロード:</strong> 下記のボタンからGitHubのReleasesページへ移動し、最新のzipファイルをダウンロードして解凍してください。</p>
+        <p style="margin-top: 20px;">
+          <a href="https://github.com/silkhat95/3D-Walking-Simulator/releases" class="btn" target="_blank">Releasesからダウンロードする</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- 操作方法 -->
+    <section id="controls" class="fade-in">
+      <h2>基本操作 (Controls)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>キー / 操作</th>
+            <th>アクション</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>W / A / S / D</td>
+            <td>移動</td>
+          </tr>
+          <tr>
+            <td>マウス移動</td>
+            <td>視点変更</td>
+          </tr>
+          <tr>
+            <td>Shift</td>
+            <td>走る</td>
+          </tr>
+          <tr>
+            <td>Eキー / 右クリック</td>
+            <td>操作</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 開発予告 -->
+    <section id="development" class="fade-in">
+      <h2>次の一歩</h2>
+      <div class="card">
+        <p style="font-size: 1.1rem; font-weight: bold; color: var(--link-color); margin-bottom: 8px;">Linux版を開発中!</p>
+        <p style="margin: 0; color: var(--text-muted);">より多くの方に遊んでいただけるよう、現在Linux版の開発を進めています。続報をお楽しみに！</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- フッター -->
+  <footer class="fade-in">
+    <p>© 2026 SilkHat4177.</p>
+    <p>
+      <a href="https://www.youtube.com/@SilkHat4177" target="_blank">YouTube (YT@SilkHat4177)</a> / 
+      <a href="https://x.com/SilkHatChannel" target="_blank">X (Twitter)</a> / 
+      <a href="https://github.com/silkhat95/3D-Walking-Simulator" target="_blank">GitHub</a>
+    </p>
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // --- 1. テーマ切り替え処理 ---
+      const themeSelect = document.getElementById("theme-select");
+      const systemPrefersLight = window.matchMedia("(prefers-color-scheme: light)");
+
+      function applyTheme(mode) {
+        if (mode === "light") {
+          document.documentElement.setAttribute("data-theme", "light");
+        } else if (mode === "dark") {
+          document.documentElement.removeAttribute("data-theme");
+        } else {
+          if (systemPrefersLight.matches) {
+            document.documentElement.setAttribute("data-theme", "light");
+          } else {
+            document.documentElement.removeAttribute("data-theme");
+          }
+        }
+      }
+
+      const savedTheme = localStorage.getItem("theme-preference") || "system";
+      themeSelect.value = savedTheme;
+      applyTheme(savedTheme);
+
+      themeSelect.addEventListener("change", (e) => {
+        const selected = e.target.value;
+        localStorage.setItem("theme-preference", selected);
+        applyTheme(selected);
+      });
+
+      systemPrefersLight.addEventListener("change", () => {
+        if (themeSelect.value === "system") {
+          applyTheme("system");
+        }
+      });
+
+      // --- 2. スクロールフェードインアニメーション ---
+      const fadeElements = document.querySelectorAll(".fade-in");
+      const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("appear");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.1
+      });
+
+      fadeElements.forEach(element => {
+        observer.observe(element);
+      });
+    });
+  </script>
+</body>
+</html>
