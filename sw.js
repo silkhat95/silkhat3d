@@ -27,37 +27,26 @@ self.addEventListener('fetch', (event) => {
 });
 
 // プッシュ通知を受け取ったときの処理
-self.addEventListener('push', (event) => {
-  let data = {
-    title: 'SilkHat_3D-WalkingSimulator',
-    body: '新しいお知らせがあります！',
-    url: 'https://silkhat95.github.io/silkhat3d/'
-  };
-
+self.addEventListener("push", (event) => {
+  let data = { title: "お知らせ", body: "新しい更新があります。", url: "/" };
   if (event.data) {
     try {
-      data = event.data.json();
+      data = { ...data, ...event.data.json() };
     } catch (e) {
       data.body = event.data.text();
     }
   }
 
-  const options = {
-    body: data.body,
-    icon: '/silkhat3d/icon.ico',
-    badge: '/silkhat3d/icon.ico',
-    data: { url: data.url || 'https://silkhat95.github.io/silkhat3d/' }
-  };
-
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      data: { url: data.url },
+    })
   );
 });
 
-// 通知をクリックしたときの処理
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(
-    clients.openWindow(event.notification.data.url)
-  );
+  const targetUrl = event.notification.data?.url || "/";
+  event.waitUntil(clients.openWindow(targetUrl));
 });
