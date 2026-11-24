@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SilkHat_3D-WalkingSimulator</title>
   <link rel="icon" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
   <style>
     /* --- テーマカラー定義（CSS変数） --- */
     :root {
@@ -231,7 +232,10 @@
   <header class="fade-in">
     <h1>SilkHat_3D-WalkingSimulator</h1>
     <p>美しい自然と鉄道の風景を、ただ歩く3Dウォーキングシミュレーター</p>
-    <a href="https://github.com/silkhat95/3D-Walking-Simulator" class="btn" target="_blank">GitHubで詳細を見る</a>
+    <a href="https://github.com/silkhat95/3D-Walking-Simulator" class="btn" target="_blank">GitHubで詳細を見る</a><br>
+    <br>
+    <button id="enable-push-btn" class="btn" style="background-color: #10b981; border: none; cursor: pointer; margin-left: 10px;"> 更新通知を受け取る
+</button>
   </header>
 
   <main>
@@ -395,5 +399,57 @@
       });
     });
   </script>
+  <script>
+  const PUBLIC_VAPID_KEY = 'ここにステップ2で生成した公開鍵を貼り付け';
+  const SERVER_URL = 'http://localhost:3000'; // 外部公開・DDNS時はそのURLに変更
+
+  // Service Workerの登録
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('Service Worker 登録完了'))
+      .catch((err) => console.error('Service Worker 登録失敗:', err));
+  }
+
+  // Base64変換用ユーティリティ
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  // 通知購読ボタンの処理
+  document.getElementById('enable-push-btn').addEventListener('click', async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        alert('通知が許可されませんでした。ブラウザの設定を確認してください。');
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+      });
+
+      // サーバーに購読情報を送信
+      await fetch(`${SERVER_URL}/subscribe`, {
+        method: 'POST',
+        body: JSON.stringify(subscription),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      alert('通知の登録が完了しました！アップデート時にお知らせします。');
+    } catch (error) {
+      console.error(error);
+      alert('通知の登録に失敗しました。サーバーが起動しているか確認してください。');
+    }
+  });
+</script>
 </body>
 </html>
