@@ -7,7 +7,7 @@ const urlsToCache = [
   '/silkhat3d/img-sunset1.jpg',
   '/silkhat3d/img-sunset2.jpg',
   '/silkhat3d/img-night1.jpg',
-  '/silkhat3d/icon.ico'
+  '/silkhat3d/favicon.png'
 ];
 
 // インストール時にキャッシュを保存
