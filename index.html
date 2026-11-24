@@ -234,7 +234,71 @@
     <p>美しい自然と鉄道の風景を、ただ歩く3Dウォーキングシミュレーター</p>
     <a href="https://github.com/silkhat95/3D-Walking-Simulator" class="btn" target="_blank">GitHubで詳細を見る</a><br>
     <br>
-    <button id="enable-push-btn" class="btn" style="background-color: #10b981; border: none; cursor: pointer; margin-left: 10px;"> 更新通知を受け取る</button>
+    <!-- 通知登録ボタン -->
+<button id="push-subscribe-btn" style="padding: 10px 16px; cursor: pointer;">
+  🔔 更新通知を受け取る
+</button>
+<p id="push-status" style="font-size: 0.9em; color: #555;"></p>
+
+<script>
+  // ▼ ご自身の環境に合わせて書き換えてください
+  const WORKER_URL = "https://silkhat4177.tmk511next.workers.dev/";
+  const VAPID_PUBLIC_KEY = "BHYW0vhh0RX8eoN2VYTOkQ_XY6cNLJrzg8xSdhwsvntxk-M6XgkISUyluzHPZKonzdy-2CNoPCG5Cvb2USptPPg";
+
+  const btn = document.getElementById("push-subscribe-btn");
+  const statusText = document.getElementById("push-status");
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+  }
+
+  async function subscribeUser() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      statusText.textContent = "お使いのブラウザはプッシュ通知に対応していません。";
+      return;
+    }
+
+    try {
+      btn.disabled = true;
+      statusText.textContent = "設定中...";
+
+      const registration = await navigator.serviceWorker.register("./sw.js");
+      await navigator.serviceWorker.ready;
+
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        statusText.textContent = "通知がブロックされました。ブラウザの設定から許可してください。";
+        btn.disabled = false;
+        return;
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+
+      const res = await fetch(`${WORKER_URL}/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscription),
+      });
+
+      if (!res.ok) throw new Error("サーバーへの登録に失敗しました");
+
+      statusText.textContent = "✅ 通知の登録が完了しました！";
+      btn.textContent = "通知登録済み";
+    } catch (err) {
+      console.error(err);
+      statusText.textContent = "エラーが発生しました: " + err.message;
+      btn.disabled = false;
+    }
+  }
+
+  btn.addEventListener("click", subscribeUser);
+</script>
   </header>
 
   <main>
@@ -398,57 +462,5 @@
       });
     });
   </script>
-  <script>
-  const PUBLIC_VAPID_KEY = 'ここにステップ2で生成した公開鍵を貼り付け';
-  const SERVER_URL = 'http://localhost:3000'; // 外部公開・DDNS時はそのURLに変更
-
-  // Service Workerの登録
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('Service Worker 登録完了'))
-      .catch((err) => console.error('Service Worker 登録失敗:', err));
-  }
-
-  // Base64変換用ユーティリティ
-  function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  }
-
-  // 通知購読ボタンの処理
-  document.getElementById('enable-push-btn').addEventListener('click', async () => {
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        alert('通知が許可されませんでした。ブラウザの設定を確認してください。');
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
-      });
-
-      // サーバーに購読情報を送信
-      await fetch(`${SERVER_URL}/subscribe`, {
-        method: 'POST',
-        body: JSON.stringify(subscription),
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      alert('通知の登録が完了しました！アップデート時にお知らせします。');
-    } catch (error) {
-      console.error(error);
-      alert('通知の登録に失敗しました。サーバーが起動しているか確認してください。');
-    }
-  });
-</script>
 </body>
 </html>
