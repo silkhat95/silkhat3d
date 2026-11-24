@@ -1,0 +1,17 @@
+{
+  "name": "SilkHat_3D-WalkingSimulator",
+  "short_name": "SilkHat3D",
+  "description": "美しい自然と鉄道の風景を、ただ歩く3Dウォーキングシミュレーター",
+  "start_url": "/silkhat3d/",
+  "scope": "/silkhat3d/",
+  "display": "standalone",
+  "background_color": "#121418",
+  "theme_color": "#121418",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
